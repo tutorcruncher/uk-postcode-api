@@ -92,7 +92,7 @@ def index():
         return 'Invalid JSON, please check your syntax\n', 400
     if not isinstance(pcs, list):
         return 'The JSON you submit should be a simple list of postcodes\n', 400
-    pcs = map(str, pcs)
+    pcs = map(unicode, pcs)
     lookup = PostcodeLookup(pcs)
     return jsonify(results=lookup.results, errors=lookup.errors)
 
