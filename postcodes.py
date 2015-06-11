@@ -37,6 +37,10 @@ class PostcodeDatabase(object):
 postcode_database = PostcodeDatabase()
 
 
+class PCException(Exception):
+    pass
+
+
 class PostcodeLookup(object):
     def __init__(self, postcodes):
         # sort so we only have to open each of the files once
@@ -47,15 +51,20 @@ class PostcodeLookup(object):
 
     def _lookup_postcode(self, pc):
         clean_pc = self._clean(pc)
-        data = postcode_database.get_dict(clean_pc)
         try:
-            coords = data[clean_pc]
-        except KeyError:
+            if clean_pc == '':
+                raise PCException()
+            data = postcode_database.get_dict(clean_pc)
+            try:
+                coords = data[clean_pc]
+            except KeyError:
+                raise PCException()
+            else:
+                lat, lng = coords.split(' ')
+                lat, lng = float(lat) + 49.5, float(lng) - 8.5
+                self.results[pc] = (lat, lng)
+        except PCException:
             self.errors[pc] = "No result for '%s'" % clean_pc
-        else:
-            lat, lng = coords.split(' ')
-            lat, lng = float(lat) + 49.5, float(lng) - 8.5
-            self.results[pc] = (lat, lng)
 
     @staticmethod
     def _clean(s):
