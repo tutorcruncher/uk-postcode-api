@@ -2,11 +2,13 @@ import os
 import sys
 import binascii
 import msgpack
+import logging
 
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
+app.logger.addHandler(logging.StreamHandler())
 
 # We have to split the postcode list into two files and access them one at a time to avoid
 # exceeding Heroku's memory limits.
