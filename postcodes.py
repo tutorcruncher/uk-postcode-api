@@ -36,6 +36,7 @@ class PostcodeDatabase(object):
         self._data = msgpack.unpack(open(file_name, 'rb'), use_list=False)
         self._data_file = file_name
 
+
 postcode_database = PostcodeDatabase()
 
 
@@ -92,7 +93,7 @@ def index():
         return 'Invalid JSON, please check your syntax\n', 400
     if not isinstance(pcs, list):
         return 'The JSON you submit should be a simple list of postcodes\n', 400
-    pcs = map(unicode, pcs)
+    pcs = map(str, pcs)
     lookup = PostcodeLookup(pcs)
     return jsonify(results=lookup.results, errors=lookup.errors)
 
@@ -105,7 +106,7 @@ def generate_token():
     you can then transfer to the server and set as an environment variable yourself.
     """
     token = binascii.hexlify(os.urandom(20)).decode()
-    print 'New token generated: AUTHKEY="%s"' % token
+    print(f'New token generated: AUTHKEY="{token}"')
 
 
 def generate_msgpack():
@@ -122,14 +123,14 @@ def generate_msgpack():
     import csv
 
     def haversine(lat1, lon1, lat2, lon2):
-        R = 6372.8 * 1000 # Earth radius in meters
-        dLat = radians(lat2 - lat1)
-        dLon = radians(lon2 - lon1)
+        radius = 6372.8 * 1000  # Earth radius in meters
+        d_lat = radians(lat2 - lat1)
+        d_lon = radians(lon2 - lon1)
         lat1 = radians(lat1)
         lat2 = radians(lat2)
-        a = sin(dLat/2)**2 + cos(lat1)*cos(lat2)*sin(dLon/2)**2
+        a = sin(d_lat/2)**2 + cos(lat1)*cos(lat2)*sin(d_lon/2)**2
         c = 2*asin(sqrt(a))
-        return R * c
+        return radius * c
 
     all_pcs = []
     with open('freemaptools_postcodes.csv', 'rb') as f:
@@ -162,7 +163,7 @@ def generate_msgpack():
             pcs2[pc] = '%0.3f %0.3f' % (lat - 49.5, lng + 8.5)
     msgpack.pack(pcs1, open(PC_FILE1, 'wb'))
     msgpack.pack(pcs2, open(PC_FILE2, 'wb'))
-    print 'saved %d and %d postcodes to %s and %s respectively' % (len(pcs1), len(pcs2), PC_FILE1, PC_FILE2)
+    print(f'saved {len(pcs1)} and {len(pcs2)} postcodes to {PC_FILE1} and {PC_FILE2} respectively')
 
 
 def try_postcodes():
@@ -175,21 +176,22 @@ def try_postcodes():
     import json
     from pprint import pprint
     dft_url = 'http://127.0.0.1:5000/'
-    url = raw_input('Enter URL to make requests to '
-                    '(default is "%s" but you need to be running the sever locally): ' % dft_url) or dft_url
+    url = input(
+        f'Enter URL to make requests to (default is "{dft_url}" but you need to be running the sever locally): '
+    ) or dft_url
     dft_token = 'testing'
-    token = raw_input('Enter token to use (dft "%s"); ' % dft_token) or dft_token
+    token = input(f'Enter token to use (dft "{dft_token}"); ') or dft_token
     cli_pcs = ', '.join(sys.argv[2:])
-    pcs = raw_input('Enter comma separated list of postcodes to try (default "%s"): ' % cli_pcs) or cli_pcs
+    pcs = input(f'Enter comma separated list of postcodes to try (default "{cli_pcs}"): ') or cli_pcs
     pcs = [pc.strip(', ') for pc in pcs.split(',')]
     data = json.dumps(pcs)
-    r = requests.post(url, data=data, headers={'Authorization': 'Token %s' % token})
-    print 'response status: %d' % r.status_code
+    r = requests.post(url, data=data, headers={'Authorization': f'Token {token}'})
+    print(f'response status: {r.status_code}')
     if r.status_code != 200:
-        print 'bad response code, exiting'
+        print('bad response code, exiting')
         return
     result = r.json()
-    print 'content:'
+    print('content:')
     pprint(result)
 
 
