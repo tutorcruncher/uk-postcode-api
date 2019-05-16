@@ -14,6 +14,7 @@ app.logger.addHandler(logging.StreamHandler())
 # exceeding Heroku's memory limits.
 PC_FILE1 = os.path.join(os.path.dirname(__file__), 'postcodes_1.mp')
 PC_FILE2 = os.path.join(os.path.dirname(__file__), 'postcodes_2.mp')
+FILE_1_PREF_B = set(b'abcdefghijkl')
 FILE_1_PREF = set('abcdefghijkl')
 
 
@@ -23,7 +24,7 @@ class PostcodeDatabase(object):
         self._data = None
 
     def get_dict(self, clean_pc):
-        if clean_pc[0] in FILE_1_PREF:
+        if clean_pc[0] in FILE_1_PREF_B:
             if self._data_file != PC_FILE1:
                 self._load_file(PC_FILE1)
         else:
@@ -50,24 +51,25 @@ class PostcodeLookup(object):
         postcodes = sorted(postcodes, key=self._clean)
         self.results = {}
         self.errors = {}
-        map(self._lookup_postcode, postcodes)
+        for pc in postcodes:
+            self._lookup_postcode(pc)
 
     def _lookup_postcode(self, pc):
-        clean_pc = self._clean(pc)
+        clean_pc = self._clean(pc).encode()
         try:
             if clean_pc == '':
                 raise PCException()
             data = postcode_database.get_dict(clean_pc)
             try:
-                coords = data[clean_pc]
+                coords = data[clean_pc].decode()
             except KeyError:
                 raise PCException()
             else:
                 lat, lng = coords.split(' ')
-                lat, lng = float(lat) + 49.5, float(lng) - 8.5
+                lat, lng = round(float(lat) + 49.5, 3), round(float(lng) - 8.5, 3)
                 self.results[pc] = (lat, lng)
         except PCException:
-            self.errors[pc] = "No result for '%s'" % clean_pc
+            self.errors[pc] = "No result for '%s'" % pc
 
     @staticmethod
     def _clean(s):
@@ -77,7 +79,7 @@ class PostcodeLookup(object):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """
-    The main (and only) end point of hte api.
+    The main (and only) end point of the api.
 
     Usage:
     curl -X POST -d '["BS8 4EJ", "W1J 7BU"]' http://127.0.0.1:5000/ -H 'Authorization: Token <token>'
@@ -93,7 +95,6 @@ def index():
         return 'Invalid JSON, please check your syntax\n', 400
     if not isinstance(pcs, list):
         return 'The JSON you submit should be a simple list of postcodes\n', 400
-    pcs = map(str, pcs)
     lookup = PostcodeLookup(pcs)
     return jsonify(results=lookup.results, errors=lookup.errors)
 
@@ -133,7 +134,7 @@ def generate_msgpack():
         return radius * c
 
     all_pcs = []
-    with open('freemaptools_postcodes.csv', 'rb') as f:
+    with open('freemaptools_postcodes.csv') as f:
         csv_reader = csv.reader(f)
         next(csv_reader)  # heading
         for i, row in enumerate(csv_reader):
@@ -142,7 +143,7 @@ def generate_msgpack():
             lat = float(row[2])
             lng = float(row[3])
             all_pcs.append((pc, lat, lng))
-    with open('doogle_postcodes.csv', 'rb') as f:
+    with open('doogle_postcodes.csv') as f:
         csv_reader = csv.DictReader(f)
         for i, row in enumerate(csv_reader):
             if row['Terminated']:
