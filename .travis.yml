@@ -10,4 +10,4 @@ install:
 
 script:
   - pytest --cov=./
-#  - bash < (curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash)
