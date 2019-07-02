@@ -3,9 +3,18 @@ import sys
 import binascii
 import msgpack
 import logging
+import sentry_sdk
 
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+
+sentry_sdk.init(
+    dsn='https://0f2f0bcedfa14cfe9c788179b51173b3@sentry.io/1495275',
+    integrations=[FlaskIntegration()]
+)
+
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler())
