@@ -57,7 +57,7 @@ class PostcodeLookup(object):
     def _lookup_postcode(self, pc):
         clean_pc = self._clean(pc).encode()
         try:
-            if clean_pc == '':
+            if clean_pc == '' or clean_pc == b'':
                 raise PCException()
             data = postcode_database.get_dict(clean_pc)
             try:

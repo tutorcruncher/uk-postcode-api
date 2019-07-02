@@ -4,8 +4,8 @@ import json
 
 os.environ['AUTH_TOKEN'] = 'testing'
 
-from postcodes import app
-from unittest import TestCase
+from postcodes import app, generate_token
+from unittest import TestCase, mock
 
 
 class PostcodesTestCase(TestCase):
@@ -85,3 +85,13 @@ class PostcodesTestCase(TestCase):
 
         for pc in incorrect_pcs:
             assert data['errors'][pc]
+
+
+class GenerateTokenTestCase(TestCase):
+
+    @mock.patch('builtins.print')
+    @mock.patch('binascii.hexlify')
+    def test_generate_token(self, mock_token, mock_print):
+        mock_token.return_value = b'abc123'
+        generate_token()
+        assert mock_print.mock_calls == [mock.call('New token generated: AUTHKEY="abc123"')]
