@@ -9,5 +9,5 @@ install:
   - pip install  -r requirements.txt
 
 script:
-  - pytest --cov=app
+  - pytest --cov=./
   - bash < (curl -s https://codecov.io/bash)
