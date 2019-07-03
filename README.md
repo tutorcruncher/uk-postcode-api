@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.com/tutorcruncher/uk-postcode-api.png)](https://travis-ci.com/tutorcruncher/uk-postcode-api/)
-[![codecov](https://codecov.io/gh/tutorcruncher/uk-postcode-api/branch/master/graph/badge.svg)](https://travis-ci.com/tutorcruncher/uk-postcode-api/)
+[![codecov](https://codecov.io/gh/tutorcruncher/uk-postcode-api/branch/master/graph/badge.svg)(https://codecov.io/gh/tutorcruncher/uk-postcode-api/)
 
 UK Postcode API
 ===============
