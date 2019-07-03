@@ -24,6 +24,15 @@ class PostcodesTestCase(TestCase):
         r = self.client.post('/', headers={'Authorization': 'Token testing'})
         assert r.status_code == 400
 
+    def test_json_not_list_400(self):
+        r = self.client.post(
+            '/',
+            data=json.dumps('test'),
+            headers={'Authorization': 'Token testing'},
+            content_type='application/json',
+        )
+        assert r.status_code == 400
+
     def test_post_postcode_with_correct_result(self):
         r = self.client.post(
             '/',
@@ -37,6 +46,19 @@ class PostcodesTestCase(TestCase):
         assert data['results']['sw81hl']
         assert data['results']['sw81hl'] == [51.475, -0.121]
 
+    def test_post_empty_postcode(self):
+        r = self.client.post(
+            '/',
+            data=json.dumps(['']),
+            headers={'Authorization': 'Token testing'},
+            content_type='application/json',
+        )
+        assert r.status_code == 200
+
+        data = json.loads(r.data)
+        assert data['errors']['']
+        assert data['errors'][''] == "No result for ''"
+
     def test_post_wrong_postcode_with_error(self):
         r = self.client.post(
             '/',
@@ -48,7 +70,6 @@ class PostcodesTestCase(TestCase):
 
         data = json.loads(r.data)
         assert data['errors']['abc123']
-        print(data)
         assert data['errors']['abc123'] == "No result for 'abc123'"
 
     def test_post_multiple_correct_postcodes(self):
