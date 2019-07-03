@@ -1,5 +1,4 @@
 import os
-
 import json
 
 os.environ['AUTH_TOKEN'] = 'testing'
