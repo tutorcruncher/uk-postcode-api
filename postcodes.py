@@ -3,9 +3,18 @@ import sys
 import binascii
 import msgpack
 import logging
+import sentry_sdk
 
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import BadRequest
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+
+sentry_sdk.init(
+    dsn='https://0f2f0bcedfa14cfe9c788179b51173b3@sentry.io/1495275',
+    integrations=[FlaskIntegration()]
+)
+
 
 app = Flask(__name__)
 app.logger.addHandler(logging.StreamHandler())
@@ -14,6 +23,7 @@ app.logger.addHandler(logging.StreamHandler())
 # exceeding Heroku's memory limits.
 PC_FILE1 = os.path.join(os.path.dirname(__file__), 'postcodes_1.mp')
 PC_FILE2 = os.path.join(os.path.dirname(__file__), 'postcodes_2.mp')
+FILE_1_PREF_B = set(b'abcdefghijkl')
 FILE_1_PREF = set('abcdefghijkl')
 
 
@@ -23,7 +33,7 @@ class PostcodeDatabase(object):
         self._data = None
 
     def get_dict(self, clean_pc):
-        if clean_pc[0] in FILE_1_PREF:
+        if clean_pc[0] in FILE_1_PREF_B:
             if self._data_file != PC_FILE1:
                 self._load_file(PC_FILE1)
         else:
@@ -35,6 +45,7 @@ class PostcodeDatabase(object):
         del self._data
         self._data = msgpack.unpack(open(file_name, 'rb'), use_list=False)
         self._data_file = file_name
+
 
 postcode_database = PostcodeDatabase()
 
@@ -49,24 +60,25 @@ class PostcodeLookup(object):
         postcodes = sorted(postcodes, key=self._clean)
         self.results = {}
         self.errors = {}
-        map(self._lookup_postcode, postcodes)
+        for pc in postcodes:
+            self._lookup_postcode(pc)
 
     def _lookup_postcode(self, pc):
-        clean_pc = self._clean(pc)
+        clean_pc = self._clean(pc).encode()
         try:
-            if clean_pc == '':
+            if clean_pc == b'':
                 raise PCException()
             data = postcode_database.get_dict(clean_pc)
             try:
-                coords = data[clean_pc]
+                coords = data[clean_pc].decode()
             except KeyError:
                 raise PCException()
             else:
                 lat, lng = coords.split(' ')
-                lat, lng = float(lat) + 49.5, float(lng) - 8.5
+                lat, lng = round(float(lat) + 49.5, 3), round(float(lng) - 8.5, 3)
                 self.results[pc] = (lat, lng)
         except PCException:
-            self.errors[pc] = "No result for '%s'" % clean_pc
+            self.errors[pc] = "No result for '%s'" % pc
 
     @staticmethod
     def _clean(s):
@@ -76,7 +88,7 @@ class PostcodeLookup(object):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     """
-    The main (and only) end point of hte api.
+    The main (and only) end point of the api.
 
     Usage:
     curl -X POST -d '["BS8 4EJ", "W1J 7BU"]' http://127.0.0.1:5000/ -H 'Authorization: Token <token>'
@@ -92,7 +104,6 @@ def index():
         return 'Invalid JSON, please check your syntax\n', 400
     if not isinstance(pcs, list):
         return 'The JSON you submit should be a simple list of postcodes\n', 400
-    pcs = map(unicode, pcs)
     lookup = PostcodeLookup(pcs)
     return jsonify(results=lookup.results, errors=lookup.errors)
 
@@ -105,7 +116,7 @@ def generate_token():
     you can then transfer to the server and set as an environment variable yourself.
     """
     token = binascii.hexlify(os.urandom(20)).decode()
-    print 'New token generated: AUTHKEY="%s"' % token
+    print(f'New token generated: AUTHKEY="{token}"')
 
 
 def generate_msgpack():
@@ -122,17 +133,17 @@ def generate_msgpack():
     import csv
 
     def haversine(lat1, lon1, lat2, lon2):
-        R = 6372.8 * 1000 # Earth radius in meters
-        dLat = radians(lat2 - lat1)
-        dLon = radians(lon2 - lon1)
+        radius = 6372.8 * 1000  # Earth radius in meters
+        d_lat = radians(lat2 - lat1)
+        d_lon = radians(lon2 - lon1)
         lat1 = radians(lat1)
         lat2 = radians(lat2)
-        a = sin(dLat/2)**2 + cos(lat1)*cos(lat2)*sin(dLon/2)**2
+        a = sin(d_lat/2)**2 + cos(lat1)*cos(lat2)*sin(d_lon/2)**2
         c = 2*asin(sqrt(a))
-        return R * c
+        return radius * c
 
     all_pcs = []
-    with open('freemaptools_postcodes.csv', 'rb') as f:
+    with open('freemaptools_postcodes.csv') as f:
         csv_reader = csv.reader(f)
         next(csv_reader)  # heading
         for i, row in enumerate(csv_reader):
@@ -141,7 +152,7 @@ def generate_msgpack():
             lat = float(row[2])
             lng = float(row[3])
             all_pcs.append((pc, lat, lng))
-    with open('doogle_postcodes.csv', 'rb') as f:
+    with open('doogle_postcodes.csv') as f:
         csv_reader = csv.DictReader(f)
         for i, row in enumerate(csv_reader):
             if row['Terminated']:
@@ -162,7 +173,7 @@ def generate_msgpack():
             pcs2[pc] = '%0.3f %0.3f' % (lat - 49.5, lng + 8.5)
     msgpack.pack(pcs1, open(PC_FILE1, 'wb'))
     msgpack.pack(pcs2, open(PC_FILE2, 'wb'))
-    print 'saved %d and %d postcodes to %s and %s respectively' % (len(pcs1), len(pcs2), PC_FILE1, PC_FILE2)
+    print(f'saved {len(pcs1)} and {len(pcs2)} postcodes to {PC_FILE1} and {PC_FILE2} respectively')
 
 
 def try_postcodes():
@@ -175,21 +186,22 @@ def try_postcodes():
     import json
     from pprint import pprint
     dft_url = 'http://127.0.0.1:5000/'
-    url = raw_input('Enter URL to make requests to '
-                    '(default is "%s" but you need to be running the sever locally): ' % dft_url) or dft_url
+    url = input(
+        f'Enter URL to make requests to (default is "{dft_url}" but you need to be running the sever locally): '
+    ) or dft_url
     dft_token = 'testing'
-    token = raw_input('Enter token to use (dft "%s"); ' % dft_token) or dft_token
+    token = input(f'Enter token to use (dft "{dft_token}"); ') or dft_token
     cli_pcs = ', '.join(sys.argv[2:])
-    pcs = raw_input('Enter comma separated list of postcodes to try (default "%s"): ' % cli_pcs) or cli_pcs
+    pcs = input(f'Enter comma separated list of postcodes to try (default "{cli_pcs}"): ') or cli_pcs
     pcs = [pc.strip(', ') for pc in pcs.split(',')]
     data = json.dumps(pcs)
-    r = requests.post(url, data=data, headers={'Authorization': 'Token %s' % token})
-    print 'response status: %d' % r.status_code
+    r = requests.post(url, data=data, headers={'Authorization': f'Token {token}'})
+    print(f'response status: {r.status_code}')
     if r.status_code != 200:
-        print 'bad response code, exiting'
+        print('bad response code, exiting')
         return
     result = r.json()
-    print 'content:'
+    print('content:')
     pprint(result)
 
 
