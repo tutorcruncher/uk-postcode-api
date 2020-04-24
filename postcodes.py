@@ -65,6 +65,7 @@ class PostcodeLookup(object):
 
     def _lookup_postcode(self, pc):
         clean_pc = self._clean(pc).encode()
+        app.logger.info('Finding coordinates for postcode %s', clean_pc)
         try:
             if clean_pc == b'':
                 raise PCException()
