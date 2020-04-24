@@ -149,9 +149,11 @@ def generate_msgpack():
         for i, row in enumerate(csv_reader):
             pc = row[1]
             pc = pc.lower().replace(' ', '')
-            lat = float(row[2])
-            lng = float(row[3])
-            all_pcs.append((pc, lat, lng))
+            lat = row[2]
+            lng = row[3]
+            if not lat or not lng:
+                continue
+            all_pcs.append((pc, float(lat), float(lng)))
     with open('doogle_postcodes.csv') as f:
         csv_reader = csv.DictReader(f)
         for i, row in enumerate(csv_reader):
