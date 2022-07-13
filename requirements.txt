@@ -4,4 +4,4 @@ msgpack-python==0.5.6
 requests==2.28.1  # only required for try_postcodes
 pytest==7.1.2
 pytest-cov==3.0.0
-sentry-sdk[flask]==1.7.0
+sentry-sdk[flask]==1.7.1
