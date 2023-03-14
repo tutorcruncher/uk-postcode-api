@@ -45,7 +45,7 @@ jobs:
       HEROKU_APP: uk-postcode-api
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - run: git switch master
