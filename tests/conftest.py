@@ -21,4 +21,3 @@ def client_fixture() -> Generator[TestClient, None, None]:
 def auth_headers_fixture() -> dict:
     """Return valid authorization headers for testing."""
     return {'Authorization': 'Token testing'}
-

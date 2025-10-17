@@ -12,4 +12,3 @@ def configure_logging():
     console_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s: %(message)s', datefmt='%H:%M:%S'))
 
     logger.addHandler(console_handler)
-
