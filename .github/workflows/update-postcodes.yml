@@ -1,0 +1,65 @@
+name: Update Postcode Data
+
+on:
+  schedule:
+    # Run every Sunday at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  update-postcodes:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v4
+      with:
+        version: "latest"
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    
+    - name: Install dependencies
+      run: |
+        uv sync
+    
+    - name: Download and process postcode data
+      run: |
+        uv run python scripts/update_postcodes.py
+    
+    - name: Check for changes
+      id: check_changes
+      run: |
+        if git diff --quiet app/data/; then
+          echo "changes=false" >> $GITHUB_OUTPUT
+        else
+          echo "changes=true" >> $GITHUB_OUTPUT
+        fi
+    
+    - name: Create Pull Request
+      if: steps.check_changes.outputs.changes == 'true'
+      uses: peter-evans/create-pull-request@v6
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Update postcode data'
+        title: 'Update postcode data'
+        body: |
+          Automated update of UK postcode data
+          
+          This PR updates the postcode msgpack files with the latest data from:
+          - https://www.doogal.co.uk/UKPostcodes.php
+          
+          The data has been downloaded, processed, and compressed into msgpack format.
+          
+          Please review the changes and merge if everything looks good.
+        branch: update-postcodes-${{ github.run_number }}
+        delete-branch: true
+        labels: |
+          automated
+          data-update
+
+
