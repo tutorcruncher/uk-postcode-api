@@ -23,7 +23,6 @@ def verify_auth_token(authorization: str = Header(None)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     token = authorization.replace('Token ', '').replace('Bearer ', '')
-
     if token != settings.auth_token:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
@@ -50,7 +49,7 @@ async def index():
 
 @router.post('/', name='lookup-postcodes', response_model=PostcodeResponse)
 async def lookup_postcodes(
-    postcodes: List[str], service: PostcodeService = Depends(get_postcode_service)
+    postcodes: List[str], service: PostcodeService = Depends(get_postcode_service), _: None = Depends(verify_auth_token)
 ) -> Dict[str, Any]:
     """
     Look up coordinates for a list of UK postcodes.

@@ -27,7 +27,6 @@ dev = [
     "ruff==0.13.3",
     "pytest==8.4.2",
     "pytest-asyncio==1.2.0",
-    "pytest-env==1.1.5",
     "httpx==0.28.1",
     "coverage==7.10.7",
     "pytest-cov==7.0.0",
@@ -66,9 +65,6 @@ exclude_lines = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 addopts = "--tb=native"
-env = [
-    "AUTH_TOKEN=testing",
-]
 filterwarnings = [
     'error',
     "ignore::pytest.PytestUnraisableExceptionWarning",

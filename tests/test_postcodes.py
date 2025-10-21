@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from app.services.postcode_lookup import PostcodeService
@@ -70,10 +69,6 @@ class TestPostcodesAPI:
         data = r.json()
         assert data == {'results': {}, 'errors': {'abc123': "No result for 'abc123'"}}
 
-    @pytest.mark.skipif(
-        not __import__('os').path.exists('app/data/postcodes_1.mp'),
-        reason='Postcode data files not found. Run scripts/update_postcodes.py to generate them.',
-    )
     def test_post_correct_postcode(self, client: TestClient, auth_headers: dict):
         """Test POST with valid postcode returns coordinates."""
         r = client.post(client.app.url_path_for('lookup-postcodes'), json=['sw81hl'], headers=auth_headers)
@@ -82,10 +77,6 @@ class TestPostcodesAPI:
         data = r.json()
         assert data == {'results': {'sw81hl': [51.475, -0.121]}, 'errors': {}}
 
-    @pytest.mark.skipif(
-        not __import__('os').path.exists('app/data/postcodes_1.mp'),
-        reason='Postcode data files not found',
-    )
     def test_post_multiple_correct_postcodes(self, client: TestClient, auth_headers: dict):
         """Test POST with multiple valid postcodes."""
         pcs = ['SW8 5EL', 'N7 7AJ', 'IG10 4QE', 'SW8 5JB', 'DD6 9DD', 'L3 9BE', 'KY99 4BS', 'LL47 6TJ', 'SS2 5JA']
@@ -109,10 +100,6 @@ class TestPostcodesAPI:
             'errors': {},
         }
 
-    @pytest.mark.skipif(
-        not __import__('os').path.exists('app/data/postcodes_1.mp'),
-        reason='Postcode data files not found',
-    )
     def test_post_mixed_valid_invalid_postcodes(self, client: TestClient, auth_headers: dict):
         """Test POST with both valid and invalid postcodes."""
         correct_pcs = ['DD6 9DD', 'L3 9BE', 'KY99 4BS', 'LL47 6TJ', 'SS2 5JA']
@@ -144,7 +131,7 @@ class TestPostcodesAPI:
     def test_auth_with_bearer_token(self, client: TestClient):
         """Test that Bearer token format also works."""
         r = client.post(
-            client.app.url_path_for('lookup-postcodes'), json=['test'], headers={'Authorization': 'Bearer testing'}
+            client.app.url_path_for('lookup-postcodes'), json=['test'], headers={'Authorization': 'Bearer secret-key'}
         )
         assert r.status_code == 200
 
