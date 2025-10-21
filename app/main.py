@@ -99,12 +99,7 @@ app.include_router(postcodes_router)
 @app.get('/', name='root')
 async def root():
     """Root endpoint with API information."""
-    return {
-        'message': 'UK Postcode API',
-        'version': '1.0.0',
-        'docs': '/docs',
-        'postcode_endpoint': '/api/',
-    }
+    return {'message': 'UK Postcode API', 'version': '1.0.0', 'docs': '/docs', 'postcode_endpoint': '/api/'}
 
 
 @app.get('/health', name='health-check')
@@ -117,9 +112,7 @@ async def health_check():
 # Configure Logfire if token is provided
 if settings.logfire_token:
     logfire.configure(
-        token=settings.logfire_token,
-        environment=settings.logfire_environment,
-        service_name='uk-postcode-api',
+        token=settings.logfire_token, environment=settings.logfire_environment, service_name='uk-postcode-api'
     )
     logfire.instrument_fastapi(app)
 

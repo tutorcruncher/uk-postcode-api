@@ -1,49 +1,41 @@
-name: CI
+name: Tests
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [main, develop]
   pull_request:
-    branches: [ master, main ]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
+      with:
+        # For pull requests, this ensures we checkout the PR branch, not the target branch
+        ref: ${{ github.event.pull_request.head.sha || github.sha }}
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
     
     - name: Install uv
       uses: astral-sh/setup-uv@v4
       with:
         version: "latest"
     
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: "3.12"
-    
     - name: Install dependencies
-      run: |
-        uv sync --dev
+      run: make install-dev
     
-    - name: Lint with ruff
-      run: |
-        uv run ruff check .
-        uv run ruff format --check .
+    - name: Run linting
+      run: make lint
     
     - name: Run tests with coverage
-      env:
-        AUTH_TOKEN: testing
-      run: |
-        uv run coverage run -m pytest tests/
-        uv run coverage report
-        uv run coverage xml
-    
-    - name: Upload coverage to codecov
-      uses: codecov/codecov-action@v4
+      run: make test-cov
+
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
       with:
-        file: ./coverage.xml
-        fail_ci_if_error: false
-
-
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./coverage.xml

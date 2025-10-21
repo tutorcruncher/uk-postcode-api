@@ -20,12 +20,12 @@ class PostcodeResponse(BaseModel):
 def verify_auth_token(authorization: str = Header(None)):
     """Verify the Authorization header contains the correct token."""
     if not authorization:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Please insert coin')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
     token = authorization.replace('Token ', '').replace('Bearer ', '')
 
     if token != settings.auth_token:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Please insert coin')
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
 
 def get_postcode_service() -> PostcodeService:
@@ -48,7 +48,7 @@ async def index():
     }
 
 
-@router.post('/', name='lookup-postcodes', response_model=PostcodeResponse, dependencies=[Depends(verify_auth_token)])
+@router.post('/', name='lookup-postcodes', response_model=PostcodeResponse)
 async def lookup_postcodes(
     postcodes: List[str], service: PostcodeService = Depends(get_postcode_service)
 ) -> Dict[str, Any]:
