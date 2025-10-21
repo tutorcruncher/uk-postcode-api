@@ -1,7 +1,7 @@
 import logging
 from typing import Any, Dict, List
 
-from fastapi import APIRouter, Depends, Header, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from pydantic import BaseModel
 
 from app.core.config import settings
@@ -27,11 +27,15 @@ def verify_auth_token(authorization: str = Header(None)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN)
 
 
-def get_postcode_service() -> PostcodeService:
+def get_postcode_service(request: Request) -> PostcodeService:
     """Dependency to get the postcode service from app state."""
-    from app.main import postcode_service
+    # Primary method: get from app state (works in all modes once initialized)
+    service = getattr(request.app.state, 'postcode_service', None)
 
-    return postcode_service
+    if service is None:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail='Postcode service not initialized')
+
+    return service
 
 
 @router.get('/', name='api-index', response_model=Dict[str, str])

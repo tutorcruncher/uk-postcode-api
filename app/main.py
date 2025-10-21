@@ -28,6 +28,9 @@ async def lifespan(app: FastAPI):
     postcode_service = PostcodeService(settings.postcode_file_1, settings.postcode_file_2)
     logger.info('Postcode service initialized')
 
+    # Store in app state for dependency injection
+    app.state.postcode_service = postcode_service
+
     # Initialize monitoring
     if settings.sentry_dsn:
         import sentry_sdk
