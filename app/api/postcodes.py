@@ -57,29 +57,29 @@ async def lookup_postcodes(
 ) -> Dict[str, Any]:
     """
     Look up coordinates for a list of UK postcodes.
-    
+
     ## Request Body
-    
+
     Send a JSON array of postcode strings:
     ```json
     ["SW8 5EL", "N7 7AJ", "W1J 7BU"]
     ```
-    
+
     ## Response
-    
+
     Returns an object with two fields:
     - `results`: Dict mapping postcodes to [latitude, longitude] arrays
     - `errors`: Dict mapping invalid postcodes to error messages
-    
+
     ## Example
-    
+
     ```bash
     curl -X POST http://localhost:8000/api/ \\
       -H "Authorization: Token your-token-here" \\
       -H "Content-Type: application/json" \\
       -d '["SW8 5EL", "W1J 7BU", "invalid"]'
     ```
-    
+
     Response:
     ```json
     {
@@ -95,5 +95,5 @@ async def lookup_postcodes(
     """
     logger.info(f'Looking up {len(postcodes)} postcodes')
     results, errors = service.lookup_batch(postcodes)
-    logger.info(f'Found {len(results)} results, {len(errors)} errors')
+    logger.info(f'Found {len(results)} results, {len(errors)} errors. Errors: {errors}')
     return {'results': results, 'errors': errors}
