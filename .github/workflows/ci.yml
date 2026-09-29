@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         # For pull requests, this ensures we checkout the PR branch, not the target branch
         ref: ${{ github.event.pull_request.head.sha || github.sha }}
