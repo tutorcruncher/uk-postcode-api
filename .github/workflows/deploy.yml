@@ -13,12 +13,32 @@ permissions:
 
 jobs:
   deploy:
+    # This is a public repo: never run on forks.
+    if: github.repository == 'tutorcruncher/uk-postcode-api'
     runs-on: ubuntu-latest
+    environment: uk-postcode-api
     steps:
+      - name: Check the release was published by a maintainer
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$ACTOR/permission" --jq .permission)
+          if [ "$permission" != "admin" ] && [ "$permission" != "write" ]; then
+            echo "::error::$ACTOR has '$permission' access; only maintainers can deploy."
+            exit 1
+          fi
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           ref: ${{ github.event.release.tag_name }}
+          persist-credentials: false
+      - name: Check the release tag is on master
+        run: |
+          if ! git merge-base --is-ancestor HEAD origin/master; then
+            echo "::error::The release tag is not on master; only reviewed code can be deployed."
+            exit 1
+          fi
       - name: Push to Heroku
         env:
           HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
