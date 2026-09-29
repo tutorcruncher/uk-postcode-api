@@ -1,0 +1,26 @@
+name: Deploy to Heroku
+
+on:
+  release:
+    types: [published]
+
+# Never let two deploys push to the app at the same time.
+concurrency:
+  group: prod-deploy
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.release.tag_name }}
+      - name: Push to Heroku
+        env:
+          HEROKU_API_KEY: ${{ secrets.HEROKU_API_KEY }}
+        run: |
+          git push https://heroku:$HEROKU_API_KEY@git.heroku.com/uk-postcode-api.git HEAD:refs/heads/main --force
